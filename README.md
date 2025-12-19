@@ -2,7 +2,7 @@
 
 Aplikacja webowa w .NET do testowania i eksploracji Power BI API. Umożliwia interaktywne sprawdzanie wszystkich podstawowych metod API.
 
-![Power BI Explorer](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat-square&logo=dotnet)
+![Power BI Explorer](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)
 ![Power BI](https://img.shields.io/badge/Power%20BI-API-F2C811?style=flat-square&logo=powerbi)
 
 ## 🚀 Funkcjonalności
@@ -20,7 +20,7 @@ Aplikacja webowa w .NET do testowania i eksploracji Power BI API. Umożliwia int
 
 ## 📋 Wymagania
 
-- .NET 9.0 SDK
+- .NET 10.0 SDK
 - Konto Azure z zarejestrowaną aplikacją
 - Licencja Power BI Pro lub Premium
 
