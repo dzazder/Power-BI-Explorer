@@ -1,0 +1,520 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<!-- Dashboard Section -->
+<section id="section-dashboard" class="section fade-in">
+    <div class="header">
+        <h2>Dashboard</h2>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="refreshAll()">
+                <i class="fas fa-sync-alt"></i>
+                Odśwież wszystko
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-icon workspaces">
+                <i class="fas fa-folder"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="workspaceCount">-</h4>
+                <span>Workspaces</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon reports">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="reportCount">-</h4>
+                <span>Raporty</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon datasets">
+                <i class="fas fa-database"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="datasetCount">-</h4>
+                <span>Datasets</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon dashboards">
+                <i class="fas fa-tachometer-alt"></i>
+            </div>
+            <div class="stat-info">
+                <h4 id="dashboardCount">-</h4>
+                <span>Dashboards</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-history"></i>
+                Ostatnie zapytania API
+            </div>
+        </div>
+        <div id="recentRequests">
+            <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+                Brak ostatnich zapytań. Wykonaj pierwsze zapytanie API.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Config Section -->
+<section id="section-config" class="section" style="display: none;">
+    <div class="header">
+        <h2>Konfiguracja</h2>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-cog"></i>
+                Ustawienia Azure AD / Power BI
+            </div>
+        </div>
+        <div class="config-grid">
+            <div class="form-group">
+                <label>Application (Client) ID</label>
+                <input type="text" id="configAppId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Tenant ID</label>
+                <input type="text" id="configTenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Client Secret</label>
+                <input type="password" id="configSecret" placeholder="••••••••••••••••">
+            </div>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 1rem;">
+            <i class="fas fa-info-circle"></i>
+            Te wartości należy skonfigurować w pliku <code>appsettings.json</code> na serwerze.
+            Formularz powyżej służy tylko do podglądu aktualnej konfiguracji.
+        </p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-book"></i>
+                Instrukcja konfiguracji
+            </div>
+        </div>
+        <ol style="color: var(--text-secondary); line-height: 2;">
+            <li>Zarejestruj aplikację w <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" style="color: var(--accent-primary);">Azure Portal</a></li>
+            <li>Nadaj uprawnienia do Power BI API (Delegated: Dataset.Read.All, Report.Read.All, etc.)</li>
+            <li>Utwórz Client Secret</li>
+            <li>Skopiuj Application ID, Tenant ID i Secret do <code>appsettings.json</code></li>
+            <li>Przydziel administratora tenanta do zatwierdzenia uprawnień</li>
+        </ol>
+    </div>
+</section>
+
+<!-- Token Section -->
+<section id="section-token" class="section" style="display: none;">
+    <div class="header">
+        <h2>Token dostępu</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="getToken()">
+                <i class="fas fa-key"></i>
+                Pobierz Token
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-shield-alt"></i>
+                Status tokena
+            </div>
+            <span class="badge badge-warning" id="tokenStatus">Brak tokena</span>
+        </div>
+        <div class="form-group">
+            <label>Access Token</label>
+            <textarea id="tokenValue" rows="6" readonly placeholder="Token pojawi się tutaj po kliknięciu 'Pobierz Token'"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Wygasa</label>
+            <input type="text" id="tokenExpiry" readonly placeholder="-">
+        </div>
+    </div>
+</section>
+
+<!-- Workspaces Section -->
+<section id="section-workspaces" class="section" style="display: none;">
+    <div class="header">
+        <h2>Workspaces</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="loadWorkspaces()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-folder"></i>
+                Lista workspace'ów
+            </div>
+            <span class="badge badge-info" id="workspaceBadge">0</span>
+        </div>
+        <div id="workspacesTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Kliknij "Załaduj" aby pobrać listę workspace'ów</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Reports Section -->
+<section id="section-reports" class="section" style="display: none;">
+    <div class="header">
+        <h2>Raporty</h2>
+        <div class="header-actions">
+            <select id="reportWorkspaceSelect" class="form-group" style="margin: 0; width: 300px;">
+                <option value="">-- Wybierz workspace --</option>
+                <option value="my">Mój workspace</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadReports()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-file-alt"></i>
+                Lista raportów
+            </div>
+            <span class="badge badge-info" id="reportBadge">0</span>
+        </div>
+        <div id="reportsTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Wybierz workspace i kliknij "Załaduj"</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Datasets Section -->
+<section id="section-datasets" class="section" style="display: none;">
+    <div class="header">
+        <h2>Datasets</h2>
+        <div class="header-actions">
+            <select id="datasetWorkspaceSelect" class="form-group" style="margin: 0; width: 300px;">
+                <option value="">-- Wybierz workspace --</option>
+                <option value="my">Mój workspace</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadDatasets()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-database"></i>
+                Lista datasetów
+            </div>
+            <span class="badge badge-info" id="datasetBadge">0</span>
+        </div>
+        <div id="datasetsTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Wybierz workspace i kliknij "Załaduj"</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Dashboards Section -->
+<section id="section-dashboards" class="section" style="display: none;">
+    <div class="header">
+        <h2>Dashboards</h2>
+        <div class="header-actions">
+            <select id="dashboardWorkspaceSelect" class="form-group" style="margin: 0; width: 300px;">
+                <option value="">-- Wybierz workspace --</option>
+                <option value="my">Mój workspace</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadDashboards()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Lista dashboardów
+            </div>
+            <span class="badge badge-info" id="dashboardBadge">0</span>
+        </div>
+        <div id="dashboardsTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Wybierz workspace i kliknij "Załaduj"</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Embed Section -->
+<section id="section-embed" class="section" style="display: none;">
+    <div class="header">
+        <h2>Embed Report</h2>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-code"></i>
+                Konfiguracja Embed
+            </div>
+        </div>
+        <div class="config-grid">
+            <div class="form-group">
+                <label>Workspace ID</label>
+                <input type="text" id="embedWorkspaceId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>Report ID</label>
+                <input type="text" id="embedReportId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="getEmbedConfig()" style="margin-top: 1rem;">
+            <i class="fas fa-play"></i>
+            Pobierz Embed Config
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-eye"></i>
+                Embed Token
+            </div>
+        </div>
+        <div id="embedResult">
+            <div class="embed-placeholder">
+                <i class="fas fa-chart-bar"></i>
+                <p>Wprowadź Workspace ID i Report ID, aby pobrać konfigurację embed</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Capacities Section -->
+<section id="section-capacities" class="section" style="display: none;">
+    <div class="header">
+        <h2>Capacities</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="loadCapacities()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-server"></i>
+                Lista capacities
+            </div>
+        </div>
+        <div id="capacitiesTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Kliknij "Załaduj" aby pobrać listę capacities</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Gateways Section -->
+<section id="section-gateways" class="section" style="display: none;">
+    <div class="header">
+        <h2>Gateways</h2>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="loadGateways()">
+                <i class="fas fa-sync-alt"></i>
+                Załaduj
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-network-wired"></i>
+                Lista gateways
+            </div>
+        </div>
+        <div id="gatewaysTable">
+            <div class="loading">
+                <p style="color: var(--text-muted);">Kliknij "Załaduj" aby pobrać listę gateways</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- API Tester Section -->
+<section id="section-api-tester" class="section" style="display: none;">
+    <div class="header">
+        <h2>API Tester</h2>
+    </div>
+
+    <div class="api-section">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-list"></i>
+                    Dostępne endpointy
+                </div>
+            </div>
+            <div class="endpoint-list" id="endpointList">
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/token', 'Pobierz token')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/token</div>
+                        <div class="endpoint-desc">Pobierz token dostępu</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/workspaces', 'Pobierz workspaces')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/workspaces</div>
+                        <div class="endpoint-desc">Lista wszystkich workspace'ów</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/reports', 'Pobierz raporty z My Workspace')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/reports</div>
+                        <div class="endpoint-desc">Raporty z My Workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/workspaces/{id}/reports', 'Pobierz raporty')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/workspaces/{id}/reports</div>
+                        <div class="endpoint-desc">Raporty w workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/datasets', 'Pobierz datasety z My Workspace')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/datasets</div>
+                        <div class="endpoint-desc">Datasety z My Workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/workspaces/{id}/datasets', 'Pobierz datasety')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/workspaces/{id}/datasets</div>
+                        <div class="endpoint-desc">Datasety w workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/dashboards', 'Pobierz dashboardy z My Workspace')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/dashboards</div>
+                        <div class="endpoint-desc">Dashboardy z My Workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/workspaces/{id}/dashboards', 'Pobierz dashboardy')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/workspaces/{id}/dashboards</div>
+                        <div class="endpoint-desc">Dashboardy w workspace</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/capacities', 'Pobierz capacities')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/capacities</div>
+                        <div class="endpoint-desc">Lista capacities</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/gateways', 'Pobierz gateways')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/gateways</div>
+                        <div class="endpoint-desc">Lista gateways</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('GET', '/api/powerbi/workspaces/{id}/reports/{reportId}/embed', 'Pobierz embed config')">
+                    <span class="method-badge method-get">GET</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/.../embed</div>
+                        <div class="endpoint-desc">Embed config dla raportu</div>
+                    </div>
+                </div>
+                <div class="endpoint-item" onclick="selectEndpoint('POST', '/api/powerbi/workspaces/{id}/datasets/{datasetId}/refresh', 'Odśwież dataset')">
+                    <span class="method-badge method-post">POST</span>
+                    <div>
+                        <div class="endpoint-path">/api/powerbi/.../refresh</div>
+                        <div class="endpoint-desc">Odśwież dataset</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-terminal"></i>
+                    Request / Response
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Metoda & URL</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select id="apiMethod" style="width: 100px;">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="text" id="apiUrl" placeholder="/api/powerbi/workspaces" style="flex: 1;">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="executeApiCall()" style="margin-bottom: 1rem;">
+                <i class="fas fa-paper-plane"></i>
+                Wyślij
+            </button>
+
+            <div class="response-panel">
+                <div class="response-header">
+                    <div class="response-status">
+                        <div class="status-dot" id="responseStatusDot"></div>
+                        <span id="responseStatusText">Gotowy</span>
+                    </div>
+                    <div class="response-time" id="responseTime">-</div>
+                </div>
+                <div class="response-body">
+                    <pre id="responseBody">// Odpowiedź pojawi się tutaj</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
