@@ -4,6 +4,7 @@ Aplikacja webowa w .NET do testowania i eksploracji Power BI API. Umożliwia int
 
 ![Power BI Explorer](https://img.shields.io/badge/.NET-10.0-512BD4?style=flat-square&logo=dotnet)
 ![Power BI](https://img.shields.io/badge/Power%20BI-API-F2C811?style=flat-square&logo=powerbi)
+[![Build Status](https://github.com/dzazder/Power-BI-Explorer/actions/workflows/dotnet.yml/badge.svg?branch=master)](https://github.com/dzazder/Power-BI-Explorer/actions/workflows/dotnet.yml)
 
 ## 🚀 Funkcjonalności
 
